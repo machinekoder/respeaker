@@ -74,7 +74,7 @@ class Tuning:
             return
 
         if data[5] == 'ro':
-            raise ValueError('{} is read-only'.format(name))
+            raise ValueError(f'{name} is read-only')
 
         id = data[0]
 
@@ -108,12 +108,7 @@ class Tuning:
 
         response = struct.unpack(b'ii', response.tobytes())
 
-        if data[2] == 'int':
-            result = response[0]
-        else:
-            result = response[0] * (2.**response[1])
-
-        return result
+        return response[0] if data[2] == 'int' else response[0] * (2.**response[1])
 
     def set_vad_threshold(self, db):
         self.write('GAMMAVAD_SR', db)
@@ -139,20 +134,19 @@ class Tuning:
 
 
 def find(vid=0x2886, pid=0x0018):
-    dev = usb.core.find(idVendor=vid, idProduct=pid)
-    if not dev:
+    if dev := usb.core.find(idVendor=vid, idProduct=pid):
+        # configuration = dev.get_active_configuration()
+
+        # interface_number = None
+        # for interface in configuration:
+        #     interface_number = interface.bInterfaceNumber
+
+        #     if dev.is_kernel_driver_active(interface_number):
+        #         dev.detach_kernel_driver(interface_number)
+
+        return Tuning(dev)
+    else:
         return
-
-    # configuration = dev.get_active_configuration()
-
-    # interface_number = None
-    # for interface in configuration:
-    #     interface_number = interface.bInterfaceNumber
-
-    #     if dev.is_kernel_driver_active(interface_number):
-    #         dev.detach_kernel_driver(interface_number)
-
-    return Tuning(dev)
 
 
 
@@ -165,7 +159,7 @@ def main():
                 data = PARAMETERS[name]
                 print('{:16}\t{}'.format(name, b'\t'.join([str(i) for i in data[2:7]])))
                 for extra in data[7:]:
-                    print('{}{}'.format(' '*60, extra))
+                    print(f"{' ' * 60}{extra}")
         else:
             dev = find()
             if not dev:
@@ -184,10 +178,10 @@ def main():
                 if name in PARAMETERS:
                     if len(sys.argv) > 2:
                         dev.write(name, sys.argv[2])
-                    
-                    print('{}: {}'.format(name, dev.read(name)))
+
+                    print(f'{name}: {dev.read(name)}')
                 else:
-                    print('{} is not a valid name'.format(name))
+                    print(f'{name} is not a valid name')
 
             dev.close()
     else:
